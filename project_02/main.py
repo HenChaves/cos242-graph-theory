@@ -346,9 +346,9 @@ def prim_df_output(prim, save=False):
     prim_df = prim_df[prim_df["parent"] != -1][["parent", "node", "cost"]].sort_values(by="parent")
     
     if save:
-      with open("outputs/prim_out.txt", mode="w") as o:
-          o.write(str(len(np.unique(prim_df[["parent", "node"]].values.ravel())))+" "+str(prim_df["cost"].sum()))
-          o.write("\n"+prim_df.to_string(header=False, index=False, float_format="{:.2f}".format))
+          with open("outputs/prim_out.txt", mode="w") as o:
+                o.write(str(len(np.unique(prim_df[["parent", "node"]].values.ravel())))+" "+str(prim_df["cost"].sum()))
+                o.write("\n"+prim_df.to_string(header=False, index=False, float_format="{:.2f}".format))
 
     return prim_df
 
