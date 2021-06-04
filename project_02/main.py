@@ -6,6 +6,7 @@ import copy
 import sys
 import time
 
+#Classe para criar um Grafo, podendo ter peso (weighted) ou não (default), podendo ser representado por matrix (matrix) ou listas (lists)
 class Graph:
     
     def __init__(self, n, mode="default", representation="matrix"):
@@ -83,7 +84,9 @@ class Graph:
         if self.has_matrix:
             return pd.DataFrame(self.matrix, columns=np.arange(1, self.n_nodes+1), index=np.arange(1, self.n_nodes+1))
         return None
-
+    
+    
+#Função para carregar um grafo com pesos ou não a partir de um arquivo .txt
 def open_graph_txt(filename, extra=False, representation="matrix"):
     with open(filename, "r") as f:
         lines = [line for line in f.read().split("\n") if line != ""]
@@ -112,6 +115,7 @@ def open_graph_txt(filename, extra=False, representation="matrix"):
 
     return graph
 
+#Função para pegar as estatísticas de um grafo sem pesos
 def graph_statistics(graph):
     if graph.mode != "default": raise KeyError(f"Invalid graph mode. ({graph.mode})")
     print("Número de vértices:", graph.n_nodes)
@@ -131,6 +135,8 @@ def graph_statistics(graph):
     print("List: ", sys.getsizeof(graph.get_lists())/(10**6), "MB")
     print("Matrix: ", (str(sys.getsizeof(graph.get_matrix())/(10**6))) if graph.has_matrix else (graph.matrix_error_size), "MB")
 
+    
+#Classe para rodar busca em profundidade de grafos sem pesos
 class DFS:
     def __init__(self, graph, root):
         self.graph = graph
@@ -161,6 +167,8 @@ class DFS:
                         self.parent[v-1] = u
                         self.level[v-1] = self.level[u-1] + 1
 
+                        
+#Classe para rodar busca em largura de grafos sem pesos
 class BFS:
     def __init__(self, graph, root):
         self.graph = graph
@@ -195,6 +203,8 @@ class BFS:
                     self.parent[w-1] = v
                     self.level[w-1] = self.level[v-1] + 1
 
+                    
+#Classe para descrobrir os caminhos mínimos entre todos os nós de um grafo sem pesos
 class MinimumPath:
     
     def __init__(self, graph):
@@ -223,6 +233,8 @@ class MinimumPath:
     def get_matrix_beautiful(self):
         return pd.DataFrame(self.matrix, columns=np.arange(1, self.graph.n_nodes+1), index=np.arange(1, self.graph.n_nodes+1))
 
+    
+#Classe para encontrar as componentes conexas de um grafo sem peso
 class Components:
     
     def __init__(self, graph):
@@ -248,6 +260,8 @@ class Components:
         c = list(zip(b, a))
         return c
 
+    
+#Classe para rodar o algoritmo de Dijkstra pra encontrar as distâncias de um nó raiz para os outros nós em um grafo com pesos
 class Dijkstra:
     def __init__(self, graph, root):
         if graph.mode == "default":
@@ -296,6 +310,9 @@ class Dijkstra:
         if path[-1] == t: raise ValueError(f"Cannot find path between source and target. ({self.root}->{t})")
         return path[::-1]
 
+
+    
+#Função para salvar o resultado do algoritmo de Dijkstra
 def dijkstra_df_output(dijkstra, save=False):
     dijkstra_df = pd.DataFrame(list(zip(range(1, dijkstra.graph.n_nodes+1), dijkstra.distance, dijkstra.parent)), columns=["node", "distance", "parent"], index=np.arange(1, dijkstra.graph.n_nodes+1))
     if save:
@@ -303,6 +320,8 @@ def dijkstra_df_output(dijkstra, save=False):
 
     return dijkstra_df
 
+
+#Classe para executar o algoritmo de Prim, encontrando uma MST a partir de uma raiz em um grafo com pesos
 class Prim:
     def __init__(self, graph, root):
         if graph.mode == "default":
@@ -341,17 +360,21 @@ class Prim:
                     self.cost[v-1] = weight
                     self.parent[v-1] = u
 
+
+#Função para salvar os resultados do algoritmo de Prim
 def prim_df_output(prim, save=False):
     prim_df = pd.DataFrame(list(zip(range(1, prim.graph.n_nodes+1), prim.cost, prim.parent)), columns=["node", "cost", "parent"], index=np.arange(1, prim.graph.n_nodes+1))
     prim_df = prim_df[prim_df["parent"] != -1][["parent", "node", "cost"]].sort_values(by="parent")
     
     if save:
-          with open("outputs/prim_out.txt", mode="w") as o:
-                o.write(str(len(np.unique(prim_df[["parent", "node"]].values.ravel())))+" "+str(prim_df["cost"].sum()))
-                o.write("\n"+prim_df.to_string(header=False, index=False, float_format="{:.2f}".format))
+        with open("outputs/prim_out.txt", mode="w") as o:
+            o.write(str(len(np.unique(prim_df[["parent", "node"]].values.ravel())))+" "+str(prim_df["cost"].sum()))
+            o.write("\n"+prim_df.to_string(header=False, index=False, float_format="{:.2f}".format))
 
     return prim_df
 
+
+#Classe para encontrar a excentricidade de um vértice em um grafo com pesos
 class Eccentricity:
     def __init__(self, graph, root):
         self.dijkstra = Dijkstra(graph, root)
