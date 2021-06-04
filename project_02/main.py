@@ -1,14 +1,48 @@
 import numpy as np
-import os
 import pandas as pd
 from tqdm.notebook import tqdm
-import copy
 import sys
-import time
 
-#Classe para criar um Grafo, podendo ter peso (weighted) ou não (default), podendo ser representado por matrix (matrix) ou listas (lists)
 class Graph:
+    """
+    Class to create a Graph.
+
+    ...
     
+    Arguments
+    ----------
+    n : int
+        Number of nodes in the Graph.
+    mode : str, optional
+        The Graph mode, default or weighted. Defaults to `"default"`.
+    representation : str, optional
+        The Graph representation, matrix or lists. Defaults to `"matrix"`.
+
+    Attributes
+    ----------
+    n_nodes : int
+        Number of nodes in the Graph.
+    mode : str
+        The Graph mode, default or weighted.
+    has_matrix : bool
+        Whether the Graph has a matrix representation.
+    matrix_error_size: float | None
+        The needed memory size for the matrix representation, in case of error.
+
+    Methods
+    -------
+    add_edge(v, w, weight=1)
+        Add edge to Graph.
+    get_node(v)
+        Gets the neighbors of the v node.
+    get_list()
+        Gets the full adjacency list of the Graph.
+    get_matrix()
+        Gets the full matrix of the Graph.
+    get_matrix_beautiful()
+        Gets the full matrix of the Graph as a Pandas' DataFrame.
+
+    """
     def __init__(self, n, mode="default", representation="matrix"):
         self.n_nodes = n
         self.mode = mode
@@ -86,8 +120,22 @@ class Graph:
         return None
     
     
-#Função para carregar um grafo com pesos ou não a partir de um arquivo .txt
 def open_graph_txt(filename, extra=False, representation="matrix"):
+    """
+    Function to open a Graph file.
+
+    ...
+    
+    Arguments
+    ----------
+    filename : str
+        The filename of the file.
+    extra : bool, optional
+        Whether to return extra values. Defaults to `False`.
+    representation : str, optional
+        The Graph representation, matrix or lists. Defaults to `"matrix"`.
+
+    """
     with open(filename, "r") as f:
         lines = [line for line in f.read().split("\n") if line != ""]
         n_nodes = int(lines[0])
@@ -100,7 +148,7 @@ def open_graph_txt(filename, extra=False, representation="matrix"):
         edges = [tuple(map(lambda i: int(i), line.split(" ")[:2])) for line in lines[1:]]
         
         if mode == "default":
-            weights = [1 for line in lines[1:]]
+            weights = [1 for _ in lines[1:]]
         if mode == "weighted":
             weights = [float(line.split(" ")[-1]) for line in lines[1:]]
         
@@ -115,8 +163,19 @@ def open_graph_txt(filename, extra=False, representation="matrix"):
 
     return graph
 
-#Função para pegar as estatísticas de um grafo sem pesos
+
 def graph_statistics(graph):
+    """
+    Function to get statistics of a weightless Graph.
+
+    ...
+    
+    Arguments
+    ----------
+    graph : Graph
+        The Graph to get statistics from.
+
+    """
     if graph.mode != "default": raise KeyError(f"Invalid graph mode. ({graph.mode})")
     print("Número de vértices:", graph.n_nodes)
     
@@ -136,8 +195,31 @@ def graph_statistics(graph):
     print("Matrix: ", (str(sys.getsizeof(graph.get_matrix())/(10**6))) if graph.has_matrix else (graph.matrix_error_size), "MB")
 
     
-#Classe para rodar busca em profundidade de grafos sem pesos
+
 class DFS:
+    """
+    Class to run a Depth-first Search in a weightless Graph.
+
+    ...
+    
+    Attributes
+    ----------
+    graph : Graph
+        Graph to run the DFS.
+    root : int
+        Root node to start the DFS.
+
+    Attributes
+    ----------
+    graph : Graph
+        Graph used for the DFS.
+    visited : np_array
+        Array of visited nodes.
+    level : np_array
+        Array with the level of the nodes.
+    parent : np_array
+        Array with the parent of the nodes.
+    """
     def __init__(self, graph, root):
         self.graph = graph
         if self.graph.mode != "default":
@@ -147,14 +229,14 @@ class DFS:
         self.level = np.full(graph.n_nodes, fill_value=np.inf)
         self.parent = np.full(graph.n_nodes, fill_value=-1, dtype="int32")
         self.level[root-1] = 0
-        self.start_root(root)
-        self.search()
+        self.__start_root(root)
+        self.__search()
     
-    def start_root(self, root):
+    def __start_root(self, root):
         self.stack = []
         self.stack.append(root)
     
-    def search(self):
+    def __search(self):
         while(len(self.stack) != 0):
             u = self.stack.pop()
             
@@ -168,8 +250,30 @@ class DFS:
                         self.level[v-1] = self.level[u-1] + 1
 
                         
-#Classe para rodar busca em largura de grafos sem pesos
 class BFS:
+    """
+    Class to run a Breadth-first Search in a weightless Graph.
+
+    ...
+    
+    Attributes
+    ----------
+    graph : Graph
+        Graph to run the BFS.
+    root : int
+        Root node to start the BFS.
+
+    Attributes
+    ----------
+    graph : Graph
+        Graph used for the BFS.
+    visited : np_array
+        Array of visited nodes.
+    level : np_array
+        Array with the level of the nodes.
+    parent : np_array
+        Array with the parent of the nodes.
+    """
     def __init__(self, graph, root):
         self.graph = graph
         if self.graph.mode != "default":
@@ -182,14 +286,14 @@ class BFS:
         self.level[root-1] = 0
         self.visited[root-1] = 1
         
-        self.start_root(root)
-        self.search()
+        self.__start_root(root)
+        self.__search()
         
-    def start_root(self, root):
+    def __start_root(self, root):
         self.queue = []
         self.queue.append(root)
         
-    def search(self):
+    def __search(self):
         
         while(len(self.queue)):
             v = self.queue.pop(0)
@@ -204,44 +308,89 @@ class BFS:
                     self.level[w-1] = self.level[v-1] + 1
 
                     
-#Classe para descrobrir os caminhos mínimos entre todos os nós de um grafo sem pesos
 class MinimumPath:
+    """
+    Class to find the minimum path between all nodes in a weightless Graph.
+
+    ...
     
+    Arguments
+    ----------
+    graph : Graph
+        Graph to find the minimum path.
+
+    Attributes
+    ----------
+    graph : Graph
+        Graph used for the minimum path.
+
+    Methods
+    ----------
+    get_distance(u, v)
+        Gets the distance for the minimum path between the nodes u and v.
+    get_diameter()
+        Gets the value for the diameter of the Graph.
+    get_matrix()
+        Gets the matrix of the minimum path.
+    get_matrix_beautiful()
+        Gets the matrix of the minimum path as a Pandas' DataFrame.
+    """
+
     def __init__(self, graph):
         if graph.mode != "default": raise KeyError(f"Invalid graph mode. ({graph.mode})")
         self.graph = graph
-        self.matrix = np.full((graph.n_nodes, graph.n_nodes), fill_value=-1, dtype="int32")
-        self.run()
+        self.__matrix = np.full((graph.n_nodes, graph.n_nodes), fill_value=-1, dtype="int32")
+        self.__run()
     
-    def run(self):
+    def __run(self):
         for v in tqdm(range(1, self.graph.n_nodes+1)):
             bfs = BFS(self.graph, v)
-            bfs.search()
             for bfs_node_index in np.argwhere(bfs.visited == 1).reshape(-1):
-                self.matrix[v-1, bfs_node_index] = bfs.level[bfs_node_index]
+                self.__matrix[v-1, bfs_node_index] = bfs.level[bfs_node_index]
             del bfs
     
     def get_distance(self, u, v):
-        return self.matrix[u-1, v-1]
+        return self.__matrix[u-1, v-1]
     
     def get_diameter(self):
-        return np.max(self.matrix)
+        return np.max(self.__matrix)
     
     def get_matrix(self):
-        return self.matrix
+        return self.__matrix
     
     def get_matrix_beautiful(self):
-        return pd.DataFrame(self.matrix, columns=np.arange(1, self.graph.n_nodes+1), index=np.arange(1, self.graph.n_nodes+1))
+        return pd.DataFrame(self.__matrix, columns=np.arange(1, self.graph.n_nodes+1), index=np.arange(1, self.graph.n_nodes+1))
 
     
-#Classe para encontrar as componentes conexas de um grafo sem peso
 class Components:
+    """
+    Class to find the all the connected components in a weightless Graph.
+
+    ...
     
+    Arguments
+    ----------
+    graph : Graph
+        Graph to find the connected components.
+
+    Attributes
+    ----------
+    graph : Graph
+        Graph used for the connected components.
+    visited : np_array
+        Array of visited nodes.
+
+    Methods
+    ----------
+    get_components()
+        Gets list of components.
+    """
+
     def __init__(self, graph):
         if graph.mode != "default": raise KeyError(f"Invalid graph mode. ({graph.mode})")
         self.graph = graph
         self.visited = np.zeros(graph.n_nodes, dtype="uint8")
-        self.components = []
+        self.__components = []
         
         while np.argwhere(self.visited == 0).reshape(-1).shape[0] > 0:
             root = np.argwhere(self.visited == 0).reshape(-1)[0] + 1
@@ -252,51 +401,78 @@ class Components:
             bfs_visited_index = np.argwhere(bfs.visited == 1).reshape(-1)
             
             self.visited[bfs_visited_index] = 1
-            self.components.append((bfs_visited_index+1).tolist())
+            self.__components.append((bfs_visited_index+1).tolist())
 
     def get_components(self):
-        a = sorted(self.components, key=lambda x: len(x), reverse=True)
+        a = sorted(self.__components, key=lambda x: len(x), reverse=True)
         b = [len(x) for x in a]
         c = list(zip(b, a))
         return c
 
     
-#Classe para rodar o algoritmo de Dijkstra pra encontrar as distâncias de um nó raiz para os outros nós em um grafo com pesos
 class Dijkstra:
+    """
+    Class to run the Dijkstra algorithm in a Graph.
+
+    ...
+    
+    Arguments
+    ----------
+    graph : Graph
+        Graph to run the Dijkstra algorithm.
+    root : int
+        Root node to run the Dijkstra algorithm.
+
+    Attributes
+    ----------
+    graph : Graph
+        Graph used for the Dijkstra algorithm.
+    root : int
+        Root node for the Dijkstra algorithm.
+    distance : np_array
+        Array of distances from the root node to another node.
+    parent : np_array
+        Array with the parent of the nodes.
+
+    Methods
+    ----------
+    minpath(t)
+        Gets the minimum path between the root node and the target node t.
+    """
     def __init__(self, graph, root):
         if graph.mode == "default":
             self.graph = graph
             self.root = root
-            self.bfs = BFS(self.graph, self.root)
-            self.distance = self.bfs.level
-            self.parent = self.bfs.parent
+            self.__bfs = BFS(self.graph, self.root)
+            self.distance = self.__bfs.level
+            self.parent = self.__bfs.parent
 
         elif graph.mode == "weighted":
             self.graph = graph
             self.root = root
             
             self.distance = np.full(graph.n_nodes, fill_value=np.inf)
-            self.explored = np.zeros(graph.n_nodes, dtype="uint8")
+            self.__explored = np.zeros(graph.n_nodes, dtype="uint8")
             self.parent = np.full(graph.n_nodes, fill_value=-1, dtype="int32")
-            self.found = {self.root}
+            self.__found = {self.root}
 
             self.distance[self.root-1] = 0
             self.parent[self.root-1] = -1
             
-            self.find()
+            self.__find()
         
         else:
             raise KeyError(f"Invalid graph mode. ({graph.mode})")
     
-    def find(self):
-        while len(self.found) != 0:
-            u = np.argmin(np.where(self.explored == 0, self.distance, np.inf)) + 1
-            self.found.remove(u)
-            self.explored[u-1] = 1
+    def __find(self):
+        while len(self.__found) != 0:
+            u = np.argmin(np.where(self.__explored == 0, self.distance, np.inf)) + 1
+            self.__found.remove(u)
+            self.__explored[u-1] = 1
             for v, weight in self.graph.get_node(u):
                 if weight < 0: raise ValueError(f"Weight cannot be negative. (weight = {weight})")
-                if self.explored[v-1] == 1: continue
-                self.found.add(v)
+                if self.__explored[v-1] == 1: continue
+                self.__found.add(v)
                 if self.distance[v-1] > weight + self.distance[u-1]:
                     self.distance[v-1] = weight + self.distance[u-1]
                     self.parent[v-1] = u
@@ -311,9 +487,20 @@ class Dijkstra:
         return path[::-1]
 
 
-    
-#Função para salvar o resultado do algoritmo de Dijkstra
 def dijkstra_df_output(dijkstra, save=False):
+    """
+    Function to convert the Dijkstra Algorithm to a Pandas' DataFrame.
+
+    ...
+    
+    Arguments
+    ----------
+    dijkstra : Dijkstra
+        The Dijkstra to convert.
+    save : bool, optional
+        Whether to export the DataFrame as a csv file.
+
+    """
     dijkstra_df = pd.DataFrame(list(zip(range(1, dijkstra.graph.n_nodes+1), dijkstra.distance, dijkstra.parent)), columns=["node", "distance", "parent"], index=np.arange(1, dijkstra.graph.n_nodes+1))
     if save:
         dijkstra_df.to_csv("outputs/dijkstra_out.csv")
@@ -321,48 +508,83 @@ def dijkstra_df_output(dijkstra, save=False):
     return dijkstra_df
 
 
-#Classe para executar o algoritmo de Prim, encontrando uma MST a partir de uma raiz em um grafo com pesos
 class Prim:
+    """
+    Class to run the Prim algorithm in a Graph.
+
+    ...
+    
+    Arguments
+    ----------
+    graph : Graph
+        Graph to run the Prim algorithm.
+    root : int
+        Root node to run the Prim algorithm.
+
+    Attributes
+    ----------
+    graph : Graph
+        Graph used for the Prim algorithm.
+    root : int
+        Root node for the Prim algorithm.
+    cost : np_array
+        Array with the cost of the nodes.
+    parent : np_array
+        Array with the parent of the nodes.
+    """
     def __init__(self, graph, root):
         if graph.mode == "default":
             self.graph = graph
-            self.bfs = BFS(graph, root)
-            self.cost = np.where(self.bfs.level < np.inf, 1, np.inf)
+            self.root = root
+            self.__bfs = BFS(graph, root)
+            self.cost = np.where(self.__bfs.level < np.inf, 1, np.inf)
             self.cost[root-1] = 0
-            self.parent = self.bfs.parent
+            self.parent = self.__bfs.parent
 
         elif graph.mode == "weighted":
             self.graph = graph
-            
+            self.root = root
             self.cost = np.full(graph.n_nodes, fill_value=np.inf)
-            self.explored = np.zeros(graph.n_nodes, dtype="uint8")
+            self.__explored = np.zeros(graph.n_nodes, dtype="uint8")
             self.parent = np.full(graph.n_nodes, fill_value=-1, dtype="int32")
-            self.found = {root}
+            self.__found = {root}
 
             self.cost[root-1] = 0
             self.parent[root-1] = -1
             
-            self.find()
+            self.__find()
         
         else:
             raise KeyError(f"Invalid graph mode. ({graph.mode})")
     
-    def find(self):
-        while len(self.found) != 0:
-            u = np.argmin(np.where(self.explored == 0, self.cost, np.inf)) + 1
-            self.found.remove(u)
-            self.explored[u-1] = 1
+    def __find(self):
+        while len(self.__found) != 0:
+            u = np.argmin(np.where(self.__explored == 0, self.cost, np.inf)) + 1
+            self.__found.remove(u)
+            self.__explored[u-1] = 1
             for v, weight in self.graph.get_node(u):
                 if weight < 0: raise ValueError(f"Weight cannot be negative. (weight = {weight})")
-                if self.explored[v-1] == 1: continue
-                self.found.add(v)
+                if self.__explored[v-1] == 1: continue
+                self.__found.add(v)
                 if self.cost[v-1] > weight:
                     self.cost[v-1] = weight
                     self.parent[v-1] = u
 
 
-#Função para salvar os resultados do algoritmo de Prim
 def prim_df_output(prim, save=False):
+    """
+    Function to convert the Prim Algorithm to a Pandas' DataFrame.
+
+    ...
+    
+    Arguments
+    ----------
+    prim : Prim
+        The Prim to convert.
+    save : bool, optional
+        Whether to export the DataFrame as a csv file.
+
+    """
     prim_df = pd.DataFrame(list(zip(range(1, prim.graph.n_nodes+1), prim.cost, prim.parent)), columns=["node", "cost", "parent"], index=np.arange(1, prim.graph.n_nodes+1))
     prim_df = prim_df[prim_df["parent"] != -1][["parent", "node", "cost"]].sort_values(by="parent")
     
@@ -374,10 +596,29 @@ def prim_df_output(prim, save=False):
     return prim_df
 
 
-#Classe para encontrar a excentricidade de um vértice em um grafo com pesos
 class Eccentricity:
+    """
+    Class to find the eccentricity of a Graph node.
+
+    ...
+    
+    Arguments
+    ----------
+    graph : Graph
+        Graph to find the eccentricity.
+    root : int
+        Root node to find the eccentricity.
+
+    Attributes
+    ----------
+    dijkstra : Dijkstra
+        Dijkstra used to find the eccentricity.
+    value : float
+        The calculated eccentricity.
+    """
     def __init__(self, graph, root):
         self.dijkstra = Dijkstra(graph, root)
+        self.value = np.max(self.dijkstra.distance)
     def __repr__(self):
-        return str(np.max(self.dijkstra.distance))
+        return str(self.value)
 
