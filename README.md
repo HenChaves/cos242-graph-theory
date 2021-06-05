@@ -2,7 +2,7 @@
 
 ## Alunos:
 
-Henrique Chaves
+Henrique Chaves<br/>
 Pedro Boechat
 
 ## Sobre:
